@@ -1,0 +1,2 @@
+set(norlab_dense_mapper_INCLUDE_DIRS "@EXTERNAL_INCLUDE_DIRS@;@CMAKE_INSTALL_PREFIX@/@INSTALL_INCLUDE_DIR@/norlab_dense_mapper")
+set(norlab_dense_mapper_LIBRARIES "@EXTERNAL_LIBS@;@CMAKE_INSTALL_PREFIX@/@INSTALL_LIB_DIR@/libnorlab_dense_mapper.so")
