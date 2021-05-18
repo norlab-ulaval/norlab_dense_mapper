@@ -2,25 +2,28 @@
 #include <fstream>
 #include <chrono>
 
-norlab_dense_mapper::DenseMapper::DenseMapper(const std::string& inputFiltersConfigFilePath,
-                                              const std::string& mapPostFiltersConfigFilePath,
-                                              std::string mapUpdateCondition,
-                                              const float& mapUpdateDelay,
-                                              const float& mapUpdateDistance,
-                                              const float& minDistNewPoint,
-                                              const float& sensorMaxRange,
-                                              const float& priorDynamic,
-                                              const float& thresholdDynamic,
-                                              const float& beamHalfAngle,
-                                              const float& epsilonA,
-                                              const float& epsilonD,
-                                              const float& alpha,
-                                              const float& beta,
-                                              const bool& is3D,
-                                              const bool& isOnline,
-                                              const bool& computeProbDynamic,
-                                              const bool& isMapping,
-                                              const bool& saveMapCellsOnHardDrive) :
+norlab_dense_mapper::DenseMapper::DenseMapper(
+    const std::string& sensorFiltersConfigFilePath,
+    const std::string& robotFiltersConfigFilePath,
+    const std::string& robotStabilizedFiltersConfigFilePath,
+    const std::string& mapPostFiltersConfigFilePath,
+    std::string mapUpdateCondition,
+    const float& mapUpdateDelay,
+    const float& mapUpdateDistance,
+    const float& minDistNewPoint,
+    const float& sensorMaxRange,
+    const float& priorDynamic,
+    const float& thresholdDynamic,
+    const float& beamHalfAngle,
+    const float& epsilonA,
+    const float& epsilonD,
+    const float& alpha,
+    const float& beta,
+    const bool& is3D,
+    const bool& isOnline,
+    const bool& computeProbDynamic,
+    const bool& isMapping,
+    const bool& saveMapCellsOnHardDrive) :
     mapUpdateCondition(std::move(mapUpdateCondition)),
     mapUpdateDelay(mapUpdateDelay),
     mapUpdateDistance(mapUpdateDistance),
@@ -43,24 +46,41 @@ norlab_dense_mapper::DenseMapper::DenseMapper(const std::string& inputFiltersCon
     trajectory(is3D ? 3 : 2),
     transformation(PM::get().TransformationRegistrar.create("RigidTransformation"))
 {
-    loadYamlConfig(inputFiltersConfigFilePath, mapPostFiltersConfigFilePath);
+    loadYamlConfig(sensorFiltersConfigFilePath,
+                   robotFiltersConfigFilePath,
+                   robotStabilizedFiltersConfigFilePath,
+                   mapPostFiltersConfigFilePath);
 
-    PM::Parameters radiusFilterParams;
-    radiusFilterParams["dim"] = "-1";
-    radiusFilterParams["dist"] = std::to_string(sensorMaxRange);
-    radiusFilterParams["removeInside"] = "0";
+    PM::Parameters radiusFilterParams{
+        {"dim", "-1"}, {"dist", std::to_string(sensorMaxRange)}, {"removeInside", "0"}};
     radiusFilter = PM::get().DataPointsFilterRegistrar.create("DistanceLimitDataPointsFilter",
                                                               radiusFilterParams);
 }
 
 void norlab_dense_mapper::DenseMapper::loadYamlConfig(
-    const std::string& inputFiltersConfigFilePath,
+    const std::string& sensorFiltersConfigFilePath,
+    const std::string& robotFiltersConfigFilePath,
+    const std::string& robotStabilizedFiltersConfigFilePath,
     const std::string& mapPostFiltersConfigFilePath)
 {
-    if (!inputFiltersConfigFilePath.empty())
+    if (!sensorFiltersConfigFilePath.empty())
     {
-        std::ifstream ifs(inputFiltersConfigFilePath.c_str());
-        inputFilters = PM::DataPointsFilters(ifs);
+        std::ifstream ifs(sensorFiltersConfigFilePath.c_str());
+        sensorFilters = PM::DataPointsFilters(ifs);
+        ifs.close();
+    }
+
+    if (!robotFiltersConfigFilePath.empty())
+    {
+        std::ifstream ifs(robotFiltersConfigFilePath.c_str());
+        robotFilters = PM::DataPointsFilters(ifs);
+        ifs.close();
+    }
+
+    if (!robotStabilizedFiltersConfigFilePath.empty())
+    {
+        std::ifstream ifs(robotStabilizedFiltersConfigFilePath.c_str());
+        robotStabilizedFilters = PM::DataPointsFilters(ifs);
         ifs.close();
     }
 
@@ -74,35 +94,56 @@ void norlab_dense_mapper::DenseMapper::loadYamlConfig(
 
 void norlab_dense_mapper::DenseMapper::processInput(
     const PM::DataPoints& inputInSensorFrame,
-    const PM::TransformationParameters& currentPose,
+    const PM::TransformationParameters& sensorToRobot,
+    const PM::TransformationParameters& robotToRobotStabilized,
+    const PM::TransformationParameters& robotStabilizedToMap,
     const std::chrono::time_point<std::chrono::steady_clock>& timeStamp)
 {
     PM::DataPoints filteredInputInSensorFrame = radiusFilter->filter(inputInSensorFrame);
-    inputFilters.apply(filteredInputInSensorFrame);
-    PM::DataPoints input = transformation->compute(filteredInputInSensorFrame, currentPose);
+
+    // Apply the Observation Direction Filter to the point cloud in the sensor frame (lidar)
+    sensorFilters.apply(filteredInputInSensorFrame);
+    // Compute the transformation between the sensor frame (lidar) and the robot frame (base_link)
+    PM::DataPoints inputInRobotFrame =
+        transformation->compute(filteredInputInSensorFrame, sensorToRobot);
+
+    // Apply the Bounding Box filter to the point cloud in the robot frame (base_link)
+    robotFilters.apply(inputInRobotFrame);
+    // Compute the transformation between the robot frame (base_link) and the stabilized robot frame
+    // (base_link_stabilized)
+    PM::DataPoints inputInRobotStabilizedFrame =
+        transformation->compute(inputInRobotFrame, robotToRobotStabilized);
+
+    robotStabilizedFilters.apply(inputInRobotStabilizedFrame);
+
+    // Compute the transformation between the stabilized robot frame (base_link_stabilized) and the
+    // map frame
+    PM::DataPoints inputInMapFrame =
+        transformation->compute(inputInRobotStabilizedFrame, robotStabilizedToMap);
 
     if (denseMap.isLocalPointCloudEmpty())
     {
-        // denseMap.updatePose(currentPose);
-        updateMap(input, currentPose, timeStamp);
+        // denseMap.updatePose(sensorToRobot);
+        updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
     }
     else
     {
-        // denseMap.updatePose(currentPose);
+        // denseMap.updatePose(sensorToRobot);
 
-        if (shouldUpdateMap(timeStamp, currentPose))
+        if (shouldUpdateMap(timeStamp, robotStabilizedToMap))
         {
-            updateMap(input, currentPose, timeStamp);
+            updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
         }
     }
 
     poseLock.lock();
-    pose = currentPose;
+    pose = robotStabilizedToMap * robotToRobotStabilized * sensorToRobot;
     poseLock.unlock();
 
     int euclideanDim = is3D ? 3 : 2;
+
     trajectoryLock.lock();
-    trajectory.addPoint(currentPose.topRightCorner(euclideanDim, 1));
+    trajectory.addPoint(sensorToRobot.topRightCorner(euclideanDim, 1));
     trajectoryLock.unlock();
 }
 
@@ -134,6 +175,7 @@ bool norlab_dense_mapper::DenseMapper::shouldUpdateMap(
         int euclideanDim = is3D ? 3 : 2;
         PM::Vector lastLocation = lastPoseWhereMapWasUpdated.topRightCorner(euclideanDim, 1);
         PM::Vector currentLocation = currentPose.topRightCorner(euclideanDim, 1);
+
         return std::fabs((currentLocation - lastLocation).norm()) > mapUpdateDistance;
     }
 }
@@ -195,7 +237,6 @@ void norlab_dense_mapper::DenseMapper::setIsMapping(const bool& newIsMapping)
 {
     isMapping.store(newIsMapping);
 }
-
 Trajectory norlab_dense_mapper::DenseMapper::getTrajectory()
 {
     std::lock_guard<std::mutex> lock(trajectoryLock);

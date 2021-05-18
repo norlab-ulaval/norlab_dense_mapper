@@ -14,7 +14,9 @@ class DenseMapper
   private:
     typedef PointMatcher<float> PM;
 
-    PM::DataPointsFilters inputFilters;
+    PM::DataPointsFilters sensorFilters;
+    PM::DataPointsFilters robotFilters;
+    PM::DataPointsFilters robotStabilizedFilters;
     PM::DataPointsFilters mapPostFilters;
     std::string mapUpdateCondition;
     float mapUpdateDelay;
@@ -40,7 +42,9 @@ class DenseMapper
                    const std::chrono::time_point<std::chrono::steady_clock>& currentTimeStamp);
 
   public:
-    DenseMapper(const std::string& inputFiltersConfigFilePath,
+    DenseMapper(const std::string& sensorFiltersConfigFilePath,
+                const std::string& robotFiltersConfigFilePath,
+                const std::string& robotStabilizedFiltersConfigFilePath,
                 const std::string& mapPostFiltersConfigFilePath,
                 std::string mapUpdateCondition,
                 const float& mapUpdateDelay,
@@ -59,10 +63,14 @@ class DenseMapper
                 const bool& computeProbDynamic,
                 const bool& isMapping,
                 const bool& saveMapCellsOnHardDrive);
-    void loadYamlConfig(const std::string& inputFiltersConfigFilePath,
+    void loadYamlConfig(const std::string& sensorFiltersConfigFilePath,
+                        const std::string& robotFiltersConfigFilePath,
+                        const std::string& robotInputFiltersConfigFilePath,
                         const std::string& mapPostFiltersConfigFilePath);
     void processInput(const PM::DataPoints& inputInSensorFrame,
-                      const PM::TransformationParameters& currentPose,
+                      const PM::TransformationParameters& sensorToRobot,
+                      const PM::TransformationParameters& robotToRobotStabilized,
+                      const PM::TransformationParameters& robotStabilizedToMap,
                       const std::chrono::time_point<std::chrono::steady_clock>& timeStamp);
     PM::DataPoints getMap();
     void setMap(const PM::DataPoints& newMap);
