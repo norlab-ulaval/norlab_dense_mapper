@@ -360,6 +360,7 @@ void norlab_dense_mapper::DenseMap::computeProbabilityOfPointsBeingDynamic(
 
     PM::Matrix inputInSensorFrameRadii;
     PM::Matrix inputInSensorFrameAngles;
+
     convertToSphericalCoordinates(
         inputInSensorFrame, inputInSensorFrameRadii, inputInSensorFrameAngles);
 
@@ -367,6 +368,7 @@ void norlab_dense_mapper::DenseMap::computeProbabilityOfPointsBeingDynamic(
         transformation->compute(currentLocalPointCloud, pose.inverse());
     PM::Matrix globalId(1, currentLocalPointCloud.getNbPoints());
     int nbPointsWithinSensorMaxRange = 0;
+
     for (int i = 0; i < currentLocalPointCloud.getNbPoints(); ++i)
     {
         if (currentLocalPointCloudInSensorFrame.features.col(i)
@@ -402,6 +404,7 @@ void norlab_dense_mapper::DenseMap::computeProbabilityOfPointsBeingDynamic(
         currentLocalPointCloud.getDescriptorViewByName("probabilityDynamic");
     PM::DataPoints::View viewOnNormals =
         currentLocalPointCloudInSensorFrame.getDescriptorViewByName("normals");
+
     for (int i = 0; i < currentLocalPointCloudInSensorFrame.getNbPoints(); i++)
     {
         if (dists(i) != std::numeric_limits<float>::infinity())
@@ -864,6 +867,7 @@ norlab_dense_mapper::DenseMap::PM::DataPoints norlab_dense_mapper::DenseMap::get
     PM::DataPoints globalMap = localPointCloud;
     std::unordered_set<std::string> currentLoadedCellIds = loadedCellIds;
     localPointCloudLock.unlock();
+
     cellManagerLock.lock();
     std::vector<std::string> savedCellIds = cellManager->getAllCellIds();
     cellManagerLock.unlock();
