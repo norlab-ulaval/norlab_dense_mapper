@@ -325,7 +325,7 @@ norlab_dense_mapper::DenseMap::retrievePointsFurtherThanMinDistNewPoint(
                         PM::Matches::Ids(1, input.getNbPoints()));
     std::shared_ptr<NNS> nns =
         std::shared_ptr<NNS>(NNS::create(currentLocalPointCloud.features,
-                                         currentLocalPointCloud.features.rows() - 1,
+                                         currentLocalPointCloud.getEuclideanDim(),
                                          NNS::KDTREE_LINEAR_HEAP,
                                          NNS::TOUCH_STATISTICS));
 
@@ -361,8 +361,9 @@ void norlab_dense_mapper::DenseMap::computeProbabilityOfPointsBeingDynamic(
     PM::Matrix inputInSensorFrameRadii;
     PM::Matrix inputInSensorFrameAngles;
 
-    convertToSphericalCoordinates(
-        inputInSensorFrame, inputInSensorFrameRadii, inputInSensorFrameAngles);
+    convertToSphericalCoordinates(inputInSensorFrame,
+                                  inputInSensorFrameRadii,
+                                  inputInSensorFrameAngles);
 
     PM::DataPoints currentLocalPointCloudInSensorFrame =
         transformation->compute(currentLocalPointCloud, pose.inverse());
@@ -375,8 +376,9 @@ void norlab_dense_mapper::DenseMap::computeProbabilityOfPointsBeingDynamic(
                 .head(currentLocalPointCloudInSensorFrame.getEuclideanDim())
                 .norm() < sensorMaxRange)
         {
-            currentLocalPointCloudInSensorFrame.setColFrom(
-                nbPointsWithinSensorMaxRange, currentLocalPointCloudInSensorFrame, i);
+            currentLocalPointCloudInSensorFrame.setColFrom(nbPointsWithinSensorMaxRange,
+                                                           currentLocalPointCloudInSensorFrame,
+                                                           i);
             globalId(0, nbPointsWithinSensorMaxRange) = i;
             ++nbPointsWithinSensorMaxRange;
         }
@@ -568,7 +570,7 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                 int startAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE;
                 int endAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE;
                 scheduleUpdate(
-                    Update{ startRow, endRow, startColumn, endColumn, startAisle, endAisle, true });
+                    Update{startRow, endRow, startColumn, endColumn, startAisle, endAisle, true});
             }
             // move front
             if (toInferiorGridCoordinate(pose(0, positionColumn), sensorMaxRange) >
@@ -582,8 +584,8 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                 int endColumn = superiorColumnLastUpdateIndex + BUFFER_SIZE;
                 int startAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE;
                 int endAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE;
-                scheduleUpdate(Update{
-                    startRow, endRow, startColumn, endColumn, startAisle, endAisle, false });
+                scheduleUpdate(
+                    Update{startRow, endRow, startColumn, endColumn, startAisle, endAisle, false});
             }
             inferiorRowLastUpdateIndex =
                 toInferiorGridCoordinate(pose(0, positionColumn), sensorMaxRange);
@@ -605,8 +607,8 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                 int endColumn = superiorColumnLastUpdateIndex + BUFFER_SIZE;
                 int startAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE;
                 int endAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE;
-                scheduleUpdate(Update{
-                    startRow, endRow, startColumn, endColumn, startAisle, endAisle, false });
+                scheduleUpdate(
+                    Update{startRow, endRow, startColumn, endColumn, startAisle, endAisle, false});
             }
             // move front
             if (toSuperiorGridCoordinate(pose(0, positionColumn), sensorMaxRange) >
@@ -623,7 +625,7 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                 int startAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE;
                 int endAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE;
                 scheduleUpdate(
-                    Update{ startRow, endRow, startColumn, endColumn, startAisle, endAisle, true });
+                    Update{startRow, endRow, startColumn, endColumn, startAisle, endAisle, true});
             }
             superiorRowLastUpdateIndex =
                 toSuperiorGridCoordinate(pose(0, positionColumn), sensorMaxRange);
@@ -648,7 +650,7 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                 int startAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE;
                 int endAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE;
                 scheduleUpdate(
-                    Update{ startRow, endRow, startColumn, endColumn, startAisle, endAisle, true });
+                    Update{startRow, endRow, startColumn, endColumn, startAisle, endAisle, true});
             }
             // move left
             if (toInferiorGridCoordinate(pose(1, positionColumn), sensorMaxRange) >
@@ -662,8 +664,8 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                 int endColumn = inferiorColumnLastUpdateIndex - BUFFER_SIZE + nbColumns - 1;
                 int startAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE;
                 int endAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE;
-                scheduleUpdate(Update{
-                    startRow, endRow, startColumn, endColumn, startAisle, endAisle, false });
+                scheduleUpdate(
+                    Update{startRow, endRow, startColumn, endColumn, startAisle, endAisle, false});
             }
             inferiorColumnLastUpdateIndex =
                 toInferiorGridCoordinate(pose(1, positionColumn), sensorMaxRange);
@@ -685,8 +687,8 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                 int endColumn = superiorColumnLastUpdateIndex + BUFFER_SIZE;
                 int startAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE;
                 int endAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE;
-                scheduleUpdate(Update{
-                    startRow, endRow, startColumn, endColumn, startAisle, endAisle, false });
+                scheduleUpdate(
+                    Update{startRow, endRow, startColumn, endColumn, startAisle, endAisle, false});
             }
             // move left
             if (toSuperiorGridCoordinate(pose(1, positionColumn), sensorMaxRange) >
@@ -704,7 +706,7 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                 int startAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE;
                 int endAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE;
                 scheduleUpdate(
-                    Update{ startRow, endRow, startColumn, endColumn, startAisle, endAisle, true });
+                    Update{startRow, endRow, startColumn, endColumn, startAisle, endAisle, true});
             }
             superiorColumnLastUpdateIndex =
                 toSuperiorGridCoordinate(pose(1, positionColumn), sensorMaxRange);
@@ -733,8 +735,13 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                     int endAisle =
                         toInferiorGridCoordinate(pose(2, positionColumn), sensorMaxRange) -
                         BUFFER_SIZE + nbAisles - 1;
-                    scheduleUpdate(Update{
-                        startRow, endRow, startColumn, endColumn, startAisle, endAisle, true });
+                    scheduleUpdate(Update{startRow,
+                                          endRow,
+                                          startColumn,
+                                          endColumn,
+                                          startAisle,
+                                          endAisle,
+                                          true});
                 }
                 // move up
                 if (toInferiorGridCoordinate(pose(2, positionColumn), sensorMaxRange) >
@@ -749,8 +756,13 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                         inferiorAisleLastUpdateIndex;
                     int startAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE;
                     int endAisle = inferiorAisleLastUpdateIndex - BUFFER_SIZE + nbAisles - 1;
-                    scheduleUpdate(Update{
-                        startRow, endRow, startColumn, endColumn, startAisle, endAisle, false });
+                    scheduleUpdate(Update{startRow,
+                                          endRow,
+                                          startColumn,
+                                          endColumn,
+                                          startAisle,
+                                          endAisle,
+                                          false});
                 }
                 inferiorAisleLastUpdateIndex =
                     toInferiorGridCoordinate(pose(2, positionColumn), sensorMaxRange);
@@ -773,8 +785,13 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                         toSuperiorGridCoordinate(pose(2, positionColumn), sensorMaxRange);
                     int startAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE - nbAisles + 1;
                     int endAisle = superiorAisleLastUpdateIndex + BUFFER_SIZE;
-                    scheduleUpdate(Update{
-                        startRow, endRow, startColumn, endColumn, startAisle, endAisle, false });
+                    scheduleUpdate(Update{startRow,
+                                          endRow,
+                                          startColumn,
+                                          endColumn,
+                                          startAisle,
+                                          endAisle,
+                                          false});
                 }
                 // move up
                 if (toSuperiorGridCoordinate(pose(2, positionColumn), sensorMaxRange) >
@@ -793,8 +810,13 @@ void norlab_dense_mapper::DenseMap::updatePose(const PM::TransformationParameter
                     int endAisle =
                         toSuperiorGridCoordinate(pose(2, positionColumn), sensorMaxRange) +
                         BUFFER_SIZE;
-                    scheduleUpdate(Update{
-                        startRow, endRow, startColumn, endColumn, startAisle, endAisle, true });
+                    scheduleUpdate(Update{startRow,
+                                          endRow,
+                                          startColumn,
+                                          endColumn,
+                                          startAisle,
+                                          endAisle,
+                                          true});
                 }
                 superiorAisleLastUpdateIndex =
                     toSuperiorGridCoordinate(pose(2, positionColumn), sensorMaxRange);

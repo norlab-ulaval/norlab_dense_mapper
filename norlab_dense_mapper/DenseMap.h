@@ -1,5 +1,5 @@
-#ifndef MAP_H
-#define MAP_H
+#ifndef DENSE_MAP_H
+#define DENSE_MAP_H
 
 #include <pointmatcher/PointMatcher.h>
 #include <thread>

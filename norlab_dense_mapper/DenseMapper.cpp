@@ -50,8 +50,9 @@ norlab_dense_mapper::DenseMapper::DenseMapper(
                    robotStabilizedFiltersConfigFilePath,
                    mapPostFiltersConfigFilePath);
 
-    PM::Parameters radiusFilterParams{
-        {"dim", "-1"}, {"dist", std::to_string(sensorMaxRange)}, {"removeInside", "0"}};
+    PM::Parameters radiusFilterParams{{"dim", "-1"},
+                                      {"dist", std::to_string(sensorMaxRange)},
+                                      {"removeInside", "0"}};
     radiusFilter = PM::get().DataPointsFilterRegistrar.create("DistanceLimitDataPointsFilter",
                                                               radiusFilterParams);
 }
