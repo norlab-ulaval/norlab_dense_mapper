@@ -43,7 +43,6 @@ norlab_dense_mapper::DenseMapper::DenseMapper(
              isOnline,
              computeProbDynamic,
              saveMapCellsOnHardDrive),
-    trajectory(is3D ? 3 : 2),
     transformation(PM::get().TransformationRegistrar.create("RigidTransformation"))
 {
     loadYamlConfig(sensorFiltersConfigFilePath,
@@ -135,16 +134,6 @@ void norlab_dense_mapper::DenseMapper::processInput(
             updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
         }
     }
-
-    poseLock.lock();
-    pose = robotStabilizedToMap * robotToRobotStabilized * sensorToRobot;
-    poseLock.unlock();
-
-    int euclideanDim = is3D ? 3 : 2;
-
-    trajectoryLock.lock();
-    trajectory.addPoint(sensorToRobot.topRightCorner(euclideanDim, 1));
-    trajectoryLock.unlock();
 }
 
 bool norlab_dense_mapper::DenseMapper::shouldUpdateMap(
@@ -211,9 +200,6 @@ norlab_dense_mapper::DenseMapper::PM::DataPoints norlab_dense_mapper::DenseMappe
 void norlab_dense_mapper::DenseMapper::setMap(const PM::DataPoints& newMap)
 {
     denseMap.setGlobalPointCloud(newMap);
-    trajectoryLock.lock();
-    trajectory.clearPoints();
-    trajectoryLock.unlock();
 }
 
 bool norlab_dense_mapper::DenseMapper::getNewLocalMap(PM::DataPoints& mapOut)
@@ -221,24 +207,11 @@ bool norlab_dense_mapper::DenseMapper::getNewLocalMap(PM::DataPoints& mapOut)
     return denseMap.getNewLocalPointCloud(mapOut);
 }
 
-norlab_dense_mapper::DenseMapper::PM::TransformationParameters
-norlab_dense_mapper::DenseMapper::getPose()
-{
-    std::lock_guard<std::mutex> lock(poseLock);
-    return pose;
-}
-
 bool norlab_dense_mapper::DenseMapper::getIsMapping() const
 {
     return isMapping.load();
 }
-
 void norlab_dense_mapper::DenseMapper::setIsMapping(const bool& newIsMapping)
 {
     isMapping.store(newIsMapping);
-}
-Trajectory norlab_dense_mapper::DenseMapper::getTrajectory()
-{
-    std::lock_guard<std::mutex> lock(trajectoryLock);
-    return trajectory;
 }
