@@ -43,7 +43,6 @@ norlab_dense_mapper::DenseMapper::DenseMapper(
              isOnline,
              computeProbDynamic,
              saveMapCellsOnHardDrive),
-    trajectory(is3D ? 3 : 2),
     transformation(PM::get().TransformationRegistrar.create("RigidTransformation"))
 {
     loadYamlConfig(sensorFiltersConfigFilePath,
@@ -51,8 +50,9 @@ norlab_dense_mapper::DenseMapper::DenseMapper(
                    robotStabilizedFiltersConfigFilePath,
                    mapPostFiltersConfigFilePath);
 
-    PM::Parameters radiusFilterParams{
-        {"dim", "-1"}, {"dist", std::to_string(sensorMaxRange)}, {"removeInside", "0"}};
+    PM::Parameters radiusFilterParams{{"dim", "-1"},
+                                      {"dist", std::to_string(sensorMaxRange)},
+                                      {"removeInside", "0"}};
     radiusFilter = PM::get().DataPointsFilterRegistrar.create("DistanceLimitDataPointsFilter",
                                                               radiusFilterParams);
 }
@@ -101,50 +101,43 @@ void norlab_dense_mapper::DenseMapper::processInput(
 {
     PM::DataPoints filteredInputInSensorFrame = radiusFilter->filter(inputInSensorFrame);
 
-    // Apply the Observation Direction Filter to the point cloud in the sensor frame (lidar)
+    // Apply the sensor filters to the point cloud in the sensor frame (lidar)
     sensorFilters.apply(filteredInputInSensorFrame);
     // Compute the transformation between the sensor frame (lidar) and the robot frame (base_link)
     PM::DataPoints inputInRobotFrame =
         transformation->compute(filteredInputInSensorFrame, sensorToRobot);
 
-    // Apply the Bounding Box filter to the point cloud in the robot frame (base_link)
+    // Apply the robot filters to the point cloud in the robot frame (base_link)
     robotFilters.apply(inputInRobotFrame);
     // Compute the transformation between the robot frame (base_link) and the stabilized robot frame
     // (base_link_stabilized)
     PM::DataPoints inputInRobotStabilizedFrame =
         transformation->compute(inputInRobotFrame, robotToRobotStabilized);
 
+    // Apply the robot stabilized filters to the point cloud in the robot stabilized frame
     robotStabilizedFilters.apply(inputInRobotStabilizedFrame);
-
     // Compute the transformation between the stabilized robot frame (base_link_stabilized) and the
     // map frame
     PM::DataPoints inputInMapFrame =
         transformation->compute(inputInRobotStabilizedFrame, robotStabilizedToMap);
 
+    PM::TransformationParameters sensorToMap =
+        robotStabilizedToMap * robotToRobotStabilized * sensorToRobot;
+
     if (denseMap.isLocalPointCloudEmpty())
     {
         // denseMap.updatePose(sensorToRobot);
-        updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
+        updateMap(inputInMapFrame, sensorToMap, timeStamp);
     }
     else
     {
         // denseMap.updatePose(sensorToRobot);
 
-        if (shouldUpdateMap(timeStamp, robotStabilizedToMap))
+        if (shouldUpdateMap(timeStamp, sensorToMap))
         {
-            updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
+            updateMap(inputInMapFrame, sensorToMap, timeStamp);
         }
     }
-
-    poseLock.lock();
-    pose = robotStabilizedToMap * robotToRobotStabilized * sensorToRobot;
-    poseLock.unlock();
-
-    int euclideanDim = is3D ? 3 : 2;
-
-    trajectoryLock.lock();
-    trajectory.addPoint(sensorToRobot.topRightCorner(euclideanDim, 1));
-    trajectoryLock.unlock();
 }
 
 bool norlab_dense_mapper::DenseMapper::shouldUpdateMap(
@@ -211,9 +204,6 @@ norlab_dense_mapper::DenseMapper::PM::DataPoints norlab_dense_mapper::DenseMappe
 void norlab_dense_mapper::DenseMapper::setMap(const PM::DataPoints& newMap)
 {
     denseMap.setGlobalPointCloud(newMap);
-    trajectoryLock.lock();
-    trajectory.clearPoints();
-    trajectoryLock.unlock();
 }
 
 bool norlab_dense_mapper::DenseMapper::getNewLocalMap(PM::DataPoints& mapOut)
@@ -221,24 +211,11 @@ bool norlab_dense_mapper::DenseMapper::getNewLocalMap(PM::DataPoints& mapOut)
     return denseMap.getNewLocalPointCloud(mapOut);
 }
 
-norlab_dense_mapper::DenseMapper::PM::TransformationParameters
-norlab_dense_mapper::DenseMapper::getPose()
-{
-    std::lock_guard<std::mutex> lock(poseLock);
-    return pose;
-}
-
 bool norlab_dense_mapper::DenseMapper::getIsMapping() const
 {
     return isMapping.load();
 }
-
 void norlab_dense_mapper::DenseMapper::setIsMapping(const bool& newIsMapping)
 {
     isMapping.store(newIsMapping);
-}
-Trajectory norlab_dense_mapper::DenseMapper::getTrajectory()
-{
-    std::lock_guard<std::mutex> lock(trajectoryLock);
-    return trajectory;
 }

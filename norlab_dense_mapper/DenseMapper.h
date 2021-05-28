@@ -1,5 +1,5 @@
-#ifndef MAPPER_H
-#define MAPPER_H
+#ifndef DENSE_MAPPER_H
+#define DENSE_MAPPER_H
 
 #include <pointmatcher/PointMatcher.h>
 #include "DenseMap.h"
@@ -25,15 +25,12 @@ class DenseMapper
     bool isOnline;
     std::atomic_bool isMapping;
     DenseMap denseMap;
-    PM::TransformationParameters pose;
-    Trajectory trajectory;
     std::shared_ptr<PM::Transformation> transformation;
     std::shared_ptr<PM::DataPointsFilter> radiusFilter;
     std::chrono::time_point<std::chrono::steady_clock> lastTimeMapWasUpdated;
     PM::TransformationParameters lastPoseWhereMapWasUpdated;
-    std::mutex poseLock;
-    std::mutex trajectoryLock;
     std::future<void> mapUpdateFuture;
+
 
     bool shouldUpdateMap(const std::chrono::time_point<std::chrono::steady_clock>& currentTime,
                          const PM::TransformationParameters& currentPose) const;

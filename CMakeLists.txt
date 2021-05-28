@@ -12,7 +12,7 @@ set(EXTERNAL_LIBS ${EXTERNAL_LIBS} ${libpointmatcher_LIBRARIES})
 
 # norlab_dense_mapper target
 include_directories(norlab_dense_mapper ${libpointmatcher_INCLUDE_DIRS})
-add_library(norlab_dense_mapper SHARED norlab_dense_mapper/DenseMapper.cpp norlab_dense_mapper/DenseMap.cpp norlab_dense_mapper/Trajectory.cpp norlab_dense_mapper/RAMCellManager.cpp norlab_dense_mapper/HardDriveCellManager.cpp)
+add_library(norlab_dense_mapper norlab_dense_mapper/DenseMapper.cpp norlab_dense_mapper/DenseMap.cpp norlab_dense_mapper/Trajectory.cpp norlab_dense_mapper/RAMCellManager.cpp norlab_dense_mapper/HardDriveCellManager.cpp)
 target_link_libraries(norlab_dense_mapper ${libpointmatcher_LIBRARIES})
 
 # install target
