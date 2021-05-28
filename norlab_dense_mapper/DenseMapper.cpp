@@ -101,38 +101,41 @@ void norlab_dense_mapper::DenseMapper::processInput(
 {
     PM::DataPoints filteredInputInSensorFrame = radiusFilter->filter(inputInSensorFrame);
 
-    // Apply the Observation Direction Filter to the point cloud in the sensor frame (lidar)
+    // Apply the sensor filters to the point cloud in the sensor frame (lidar)
     sensorFilters.apply(filteredInputInSensorFrame);
     // Compute the transformation between the sensor frame (lidar) and the robot frame (base_link)
     PM::DataPoints inputInRobotFrame =
         transformation->compute(filteredInputInSensorFrame, sensorToRobot);
 
-    // Apply the Bounding Box filter to the point cloud in the robot frame (base_link)
+    // Apply the robot filters to the point cloud in the robot frame (base_link)
     robotFilters.apply(inputInRobotFrame);
     // Compute the transformation between the robot frame (base_link) and the stabilized robot frame
     // (base_link_stabilized)
     PM::DataPoints inputInRobotStabilizedFrame =
         transformation->compute(inputInRobotFrame, robotToRobotStabilized);
 
+    // Apply the robot stabilized filters to the point cloud in the robot stabilized frame
     robotStabilizedFilters.apply(inputInRobotStabilizedFrame);
-
     // Compute the transformation between the stabilized robot frame (base_link_stabilized) and the
     // map frame
     PM::DataPoints inputInMapFrame =
         transformation->compute(inputInRobotStabilizedFrame, robotStabilizedToMap);
 
+    PM::TransformationParameters sensorToMap =
+        robotStabilizedToMap * robotToRobotStabilized * sensorToRobot;
+
     if (denseMap.isLocalPointCloudEmpty())
     {
         // denseMap.updatePose(sensorToRobot);
-        updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
+        updateMap(inputInMapFrame, sensorToMap, timeStamp);
     }
     else
     {
         // denseMap.updatePose(sensorToRobot);
 
-        if (shouldUpdateMap(timeStamp, robotStabilizedToMap))
+        if (shouldUpdateMap(timeStamp, sensorToMap))
         {
-            updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
+            updateMap(inputInMapFrame, sensorToMap, timeStamp);
         }
     }
 }
