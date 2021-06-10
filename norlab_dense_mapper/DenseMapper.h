@@ -62,8 +62,8 @@ class DenseMapper
                 const bool& is3D,
                 const bool& isDepthCameraEnabled,
                 const bool& isOnline,
-                const bool& computeProbDynamic,
                 const bool& isMapping,
+                const bool& computeProbDynamic,
                 const bool& saveMapCellsOnHardDrive);
     void loadYamlConfig(const std::string& depthCameraFiltersConfigFilePath,
                         const std::string& sensorFiltersConfigFilePath,
@@ -79,10 +79,8 @@ class DenseMapper
     PM::DataPoints getMap();
     void setMap(const PM::DataPoints& newMap);
     bool getNewLocalMap(PM::DataPoints& mapOut);
-    PM::TransformationParameters getPose();
     bool getIsMapping() const;
     void setIsMapping(const bool& newIsMapping);
-    Trajectory getTrajectory();
 };
 }
 

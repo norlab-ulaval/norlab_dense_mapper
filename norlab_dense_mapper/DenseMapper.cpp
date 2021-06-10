@@ -24,8 +24,8 @@ norlab_dense_mapper::DenseMapper::DenseMapper(
     const bool& is3D,
     const bool& isDepthCameraEnabled,
     const bool& isOnline,
-    const bool& computeProbDynamic,
     const bool& isMapping,
+    const bool& computeProbDynamic,
     const bool& saveMapCellsOnHardDrive) :
     mapUpdateCondition(std::move(mapUpdateCondition)),
     depthCameraFrame(std::move(depthCameraFrame)),
