@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.1)
 project(norlab_dense_mapper)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(EXTERNAL_INCLUDE_DIRS "")
 set(EXTERNAL_LIBS "")
@@ -12,7 +14,7 @@ set(EXTERNAL_LIBS ${EXTERNAL_LIBS} ${libpointmatcher_LIBRARIES})
 
 # norlab_dense_mapper target
 include_directories(norlab_dense_mapper ${libpointmatcher_INCLUDE_DIRS})
-add_library(norlab_dense_mapper norlab_dense_mapper/DenseMapper.cpp norlab_dense_mapper/DenseMap.cpp norlab_dense_mapper/Trajectory.cpp norlab_dense_mapper/RAMCellManager.cpp norlab_dense_mapper/HardDriveCellManager.cpp)
+add_library(norlab_dense_mapper norlab_dense_mapper/DenseMapper.cpp norlab_dense_mapper/DenseMap.cpp norlab_dense_mapper/RAMCellManager.cpp norlab_dense_mapper/HardDriveCellManager.cpp)
 target_link_libraries(norlab_dense_mapper ${libpointmatcher_LIBRARIES})
 
 # install target
@@ -22,7 +24,7 @@ set(DEF_INSTALL_CMAKE_DIR lib/cmake/norlab_dense_mapper CACHE PATH "Installation
 
 install(TARGETS norlab_dense_mapper DESTINATION ${INSTALL_LIB_DIR})
 
-install(FILES norlab_dense_mapper/DenseMapper.h norlab_dense_mapper/DenseMap.h norlab_dense_mapper/Trajectory.h norlab_dense_mapper/CellManager.h
+install(FILES norlab_dense_mapper/DenseMapper.h norlab_dense_mapper/DenseMap.h norlab_dense_mapper/CellManager.h
 	DESTINATION ${INSTALL_INCLUDE_DIR}/norlab_dense_mapper
 	)
 
