@@ -3,11 +3,13 @@
 #include <chrono>
 
 norlab_dense_mapper::DenseMapper::DenseMapper(
+    const std::string& depthCameraFiltersConfigFilePath,
     const std::string& sensorFiltersConfigFilePath,
     const std::string& robotFiltersConfigFilePath,
     const std::string& robotStabilizedFiltersConfigFilePath,
     const std::string& mapPostFiltersConfigFilePath,
     std::string mapUpdateCondition,
+    std::string depthCameraFrame,
     const float& mapUpdateDelay,
     const float& mapUpdateDistance,
     const float& minDistNewPoint,
@@ -20,14 +22,17 @@ norlab_dense_mapper::DenseMapper::DenseMapper(
     const float& alpha,
     const float& beta,
     const bool& is3D,
+    const bool& isDepthCameraEnabled,
     const bool& isOnline,
     const bool& computeProbDynamic,
     const bool& isMapping,
     const bool& saveMapCellsOnHardDrive) :
     mapUpdateCondition(std::move(mapUpdateCondition)),
+    depthCameraFrame(std::move(depthCameraFrame)),
     mapUpdateDelay(mapUpdateDelay),
     mapUpdateDistance(mapUpdateDistance),
     is3D(is3D),
+    isDeptCameraEnabled(isDepthCameraEnabled),
     isOnline(isOnline),
     isMapping(isMapping),
     denseMap(minDistNewPoint,
@@ -45,7 +50,8 @@ norlab_dense_mapper::DenseMapper::DenseMapper(
              saveMapCellsOnHardDrive),
     transformation(PM::get().TransformationRegistrar.create("RigidTransformation"))
 {
-    loadYamlConfig(sensorFiltersConfigFilePath,
+    loadYamlConfig(depthCameraFiltersConfigFilePath,
+                   sensorFiltersConfigFilePath,
                    robotFiltersConfigFilePath,
                    robotStabilizedFiltersConfigFilePath,
                    mapPostFiltersConfigFilePath);
@@ -58,11 +64,19 @@ norlab_dense_mapper::DenseMapper::DenseMapper(
 }
 
 void norlab_dense_mapper::DenseMapper::loadYamlConfig(
+    const std::string& depthCameraFiltersConfigFilePath,
     const std::string& sensorFiltersConfigFilePath,
     const std::string& robotFiltersConfigFilePath,
     const std::string& robotStabilizedFiltersConfigFilePath,
     const std::string& mapPostFiltersConfigFilePath)
 {
+    if (!depthCameraFiltersConfigFilePath.empty())
+    {
+        std::ifstream ifs(depthCameraFiltersConfigFilePath.c_str());
+        depthCameraFilters = PM::DataPointsFilters(ifs);
+        ifs.close();
+    }
+
     if (!sensorFiltersConfigFilePath.empty())
     {
         std::ifstream ifs(sensorFiltersConfigFilePath.c_str());
@@ -93,13 +107,22 @@ void norlab_dense_mapper::DenseMapper::loadYamlConfig(
 }
 
 void norlab_dense_mapper::DenseMapper::processInput(
+    const std::string& sensorFrameId,
     const PM::DataPoints& inputInSensorFrame,
     const PM::TransformationParameters& sensorToRobot,
     const PM::TransformationParameters& robotToRobotStabilized,
     const PM::TransformationParameters& robotStabilizedToMap,
     const std::chrono::time_point<std::chrono::steady_clock>& timeStamp)
 {
-    PM::DataPoints filteredInputInSensorFrame = radiusFilter->filter(inputInSensorFrame);
+    PM::DataPoints filteredInputInSensorFrame;
+
+    if (isDeptCameraEnabled && sensorFrameId == depthCameraFrame)
+    {
+        filteredInputInSensorFrame = inputInSensorFrame;
+        depthCameraFilters.apply(filteredInputInSensorFrame);
+    }
+    else
+        filteredInputInSensorFrame = radiusFilter->filter(inputInSensorFrame);
 
     // Apply the sensor filters to the point cloud in the sensor frame (lidar)
     sensorFilters.apply(filteredInputInSensorFrame);

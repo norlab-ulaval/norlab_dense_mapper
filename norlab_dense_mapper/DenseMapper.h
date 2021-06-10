@@ -14,14 +14,17 @@ class DenseMapper
   private:
     typedef PointMatcher<float> PM;
 
+    PM::DataPointsFilters depthCameraFilters;
     PM::DataPointsFilters sensorFilters;
     PM::DataPointsFilters robotFilters;
     PM::DataPointsFilters robotStabilizedFilters;
     PM::DataPointsFilters mapPostFilters;
     std::string mapUpdateCondition;
+    std::string depthCameraFrame;
     float mapUpdateDelay;
     float mapUpdateDistance;
     bool is3D;
+    bool isDeptCameraEnabled;
     bool isOnline;
     std::atomic_bool isMapping;
     DenseMap denseMap;
@@ -31,7 +34,6 @@ class DenseMapper
     PM::TransformationParameters lastPoseWhereMapWasUpdated;
     std::future<void> mapUpdateFuture;
 
-
     bool shouldUpdateMap(const std::chrono::time_point<std::chrono::steady_clock>& currentTime,
                          const PM::TransformationParameters& currentPose) const;
     void updateMap(const PM::DataPoints& currentInput,
@@ -39,11 +41,13 @@ class DenseMapper
                    const std::chrono::time_point<std::chrono::steady_clock>& currentTimeStamp);
 
   public:
-    DenseMapper(const std::string& sensorFiltersConfigFilePath,
+    DenseMapper(const std::string& depthCameraFiltersConfigFilePath,
+                const std::string& sensorFiltersConfigFilePath,
                 const std::string& robotFiltersConfigFilePath,
                 const std::string& robotStabilizedFiltersConfigFilePath,
                 const std::string& mapPostFiltersConfigFilePath,
                 std::string mapUpdateCondition,
+                std::string depthCameraFrame,
                 const float& mapUpdateDelay,
                 const float& mapUpdateDistance,
                 const float& minDistNewPoint,
@@ -56,15 +60,18 @@ class DenseMapper
                 const float& alpha,
                 const float& beta,
                 const bool& is3D,
+                const bool& isDepthCameraEnabled,
                 const bool& isOnline,
                 const bool& computeProbDynamic,
                 const bool& isMapping,
                 const bool& saveMapCellsOnHardDrive);
-    void loadYamlConfig(const std::string& sensorFiltersConfigFilePath,
+    void loadYamlConfig(const std::string& depthCameraFiltersConfigFilePath,
+                        const std::string& sensorFiltersConfigFilePath,
                         const std::string& robotFiltersConfigFilePath,
                         const std::string& robotInputFiltersConfigFilePath,
                         const std::string& mapPostFiltersConfigFilePath);
-    void processInput(const PM::DataPoints& inputInSensorFrame,
+    void processInput(const std::string& sensorFrameId,
+                      const PM::DataPoints& inputInSensorFrame,
                       const PM::TransformationParameters& sensorToRobot,
                       const PM::TransformationParameters& robotToRobotStabilized,
                       const PM::TransformationParameters& robotStabilizedToMap,
