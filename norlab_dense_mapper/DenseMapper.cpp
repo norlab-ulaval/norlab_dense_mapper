@@ -119,14 +119,17 @@ void norlab_dense_mapper::DenseMapper::processInput(
     if (isDeptCameraEnabled && sensorFrameId == depthCameraFrame)
     {
         filteredInputInSensorFrame = inputInSensorFrame;
+        // Apply the depth camera filters to the point cloud in the depth camera frame
         depthCameraFilters.apply(filteredInputInSensorFrame);
     }
     else
+    {
         filteredInputInSensorFrame = radiusFilter->filter(inputInSensorFrame);
+        // Apply the lidar filters to the point cloud in the lidar frame
+        sensorFilters.apply(filteredInputInSensorFrame);
+    }
 
-    // Apply the sensor filters to the point cloud in the sensor frame (lidar)
-    sensorFilters.apply(filteredInputInSensorFrame);
-    // Compute the transformation between the sensor frame (lidar) and the robot frame (base_link)
+    // Compute the transformation between the sensor frame (lidar or depth camera) and the robot frame (base_link)
     PM::DataPoints inputInRobotFrame =
         transformation->compute(filteredInputInSensorFrame, sensorToRobot);
 
@@ -144,8 +147,14 @@ void norlab_dense_mapper::DenseMapper::processInput(
     PM::DataPoints inputInMapFrame =
         transformation->compute(inputInRobotStabilizedFrame, robotStabilizedToMap);
 
+    // Compute the transformation between the sensor frame (lidar or depth camera) and the
+    // map frame
     PM::TransformationParameters sensorToMap =
         robotStabilizedToMap * robotToRobotStabilized * sensorToRobot;
+
+    poseLock.lock();
+    pose = sensorToMap;
+    poseLock.unlock();
 
     if (denseMap.isLocalPointCloudEmpty())
     {
@@ -241,4 +250,9 @@ bool norlab_dense_mapper::DenseMapper::getIsMapping() const
 void norlab_dense_mapper::DenseMapper::setIsMapping(const bool& newIsMapping)
 {
     isMapping.store(newIsMapping);
+}
+PointMatcher<float>::TransformationParameters norlab_dense_mapper::DenseMapper::getPose()
+{
+    std::lock_guard<std::mutex> lock(poseLock);
+    return pose;
 }

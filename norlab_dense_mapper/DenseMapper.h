@@ -28,11 +28,13 @@ class DenseMapper
     bool isOnline;
     std::atomic_bool isMapping;
     DenseMap denseMap;
+    PM::TransformationParameters pose;
     std::shared_ptr<PM::Transformation> transformation;
     std::shared_ptr<PM::DataPointsFilter> radiusFilter;
     std::chrono::time_point<std::chrono::steady_clock> lastTimeMapWasUpdated;
     PM::TransformationParameters lastPoseWhereMapWasUpdated;
     std::future<void> mapUpdateFuture;
+    std::mutex poseLock;
 
     bool shouldUpdateMap(const std::chrono::time_point<std::chrono::steady_clock>& currentTime,
                          const PM::TransformationParameters& currentPose) const;
@@ -81,6 +83,7 @@ class DenseMapper
     bool getNewLocalMap(PM::DataPoints& mapOut);
     bool getIsMapping() const;
     void setIsMapping(const bool& newIsMapping);
+    PM::TransformationParameters getPose();
 };
 }
 

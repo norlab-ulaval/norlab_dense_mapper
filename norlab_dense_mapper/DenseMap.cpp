@@ -333,10 +333,11 @@ norlab_dense_mapper::DenseMap::retrievePointsFurtherThanMinDistNewPoint(
 
     int goodPointCount = 0;
     PM::DataPoints goodPoints(input.createSimilarEmpty());
+    const double minDistNewPointSquared = std::pow(minDistNewPoint, 2);
 
-    for (int i = 0; i < input.getNbPoints(); ++i)
+    for (unsigned int i = 0; i < input.getNbPoints(); ++i)
     {
-        if (matches.dists(i) >= std::pow(minDistNewPoint, 2))
+        if (matches.dists(i) >= minDistNewPointSquared)
         {
             goodPoints.setColFrom(goodPointCount, input, i);
             ++goodPointCount;
@@ -849,9 +850,7 @@ void norlab_dense_mapper::DenseMap::updateLocalPointCloud(PM::DataPoints input,
     else
     {
         if (computeProbDynamic)
-        {
             computeProbabilityOfPointsBeingDynamic(input, localPointCloud, pose);
-        }
 
         PM::DataPoints inputPointsToKeep =
             retrievePointsFurtherThanMinDistNewPoint(input, localPointCloud, pose);
@@ -910,10 +909,8 @@ norlab_dense_mapper::DenseMap::PM::DataPoints norlab_dense_mapper::DenseMap::get
 void norlab_dense_mapper::DenseMap::setGlobalPointCloud(const PM::DataPoints& newLocalPointCloud)
 {
     if (computeProbDynamic && !newLocalPointCloud.descriptorExists("normals"))
-    {
         throw std::runtime_error("compute prob dynamic is set to true, but field "
                                  "normals does not exist for map points.");
-    }
 
     localPointCloudLock.lock();
     localPointCloud = newLocalPointCloud;
