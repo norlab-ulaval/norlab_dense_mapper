@@ -3,7 +3,6 @@
 
 #include <pointmatcher/PointMatcher.h>
 #include "DenseMap.h"
-#include "Trajectory.h"
 #include <future>
 #include <mutex>
 
