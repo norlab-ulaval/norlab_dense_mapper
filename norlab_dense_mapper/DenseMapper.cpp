@@ -160,15 +160,14 @@ void norlab_dense_mapper::DenseMapper::processInput(
     if (denseMap.isLocalPointCloudEmpty())
     {
         // denseMap.updatePose(sensorToRobot);
-        updateMap(inputInMapFrame, sensorToMap, timeStamp);
+        updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
     }
     else
     {
         // denseMap.updatePose(sensorToRobot);
-
-        if (shouldUpdateMap(timeStamp, sensorToMap))
+        if (shouldUpdateMap(timeStamp, robotStabilizedToMap))
         {
-            updateMap(inputInMapFrame, sensorToMap, timeStamp);
+            updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
         }
     }
 }

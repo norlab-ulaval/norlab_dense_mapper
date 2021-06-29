@@ -856,11 +856,10 @@ void norlab_dense_mapper::DenseMap::updateLocalPointCloud(PM::DataPoints input,
             retrievePointsFurtherThanMinDistNewPoint(input, localPointCloud, pose);
         localPointCloud.concatenate(inputPointsToKeep);
     }
-
-    PM::DataPoints localPointCloudInSensorFrame =
-        transformation->compute(localPointCloud, pose.inverse());
-    postFilters.apply(localPointCloudInSensorFrame);
-    localPointCloud = transformation->compute(localPointCloudInSensorFrame, pose);
+    
+    transformation->inPlaceCompute(pose.inverse(), localPointCloud);
+    postFilters.apply(localPointCloud);
+    transformation->inPlaceCompute(pose, localPointCloud);
     localPointCloudEmpty.store(localPointCloud.getNbPoints() == 0);
     newLocalPointCloudAvailable = true;
     localPointCloudLock.unlock();
