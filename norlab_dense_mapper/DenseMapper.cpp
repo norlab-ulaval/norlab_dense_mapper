@@ -129,7 +129,8 @@ void norlab_dense_mapper::DenseMapper::processInput(
         sensorFilters.apply(filteredInputInSensorFrame);
     }
 
-    // Compute the transformation between the sensor frame (lidar or depth camera) and the robot frame (base_link)
+    // Compute the transformation between the sensor frame (lidar or depth camera) and the robot
+    // frame (base_link)
     PM::DataPoints inputInRobotFrame =
         transformation->compute(filteredInputInSensorFrame, sensorToRobot);
 
@@ -159,15 +160,14 @@ void norlab_dense_mapper::DenseMapper::processInput(
     if (denseMap.isLocalPointCloudEmpty())
     {
         // denseMap.updatePose(sensorToRobot);
-        updateMap(inputInMapFrame, sensorToMap, timeStamp);
+        updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
     }
     else
     {
         // denseMap.updatePose(sensorToRobot);
-
-        if (shouldUpdateMap(timeStamp, sensorToMap))
+        if (shouldUpdateMap(timeStamp, robotStabilizedToMap))
         {
-            updateMap(inputInMapFrame, sensorToMap, timeStamp);
+            updateMap(inputInMapFrame, robotStabilizedToMap, timeStamp);
         }
     }
 }
