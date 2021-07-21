@@ -133,16 +133,16 @@ void norlab_dense_mapper::DenseMapper::processInput(
     // frame (base_link)
     PM::DataPoints inputInRobotFrame =
         transformation->compute(filteredInputInSensorFrame, sensorToRobot);
-
     // Apply the robot filters to the point cloud in the robot frame (base_link)
     robotFilters.apply(inputInRobotFrame);
+
     // Compute the transformation between the robot frame (base_link) and the stabilized robot frame
     // (base_link_stabilized)
     PM::DataPoints inputInRobotStabilizedFrame =
         transformation->compute(inputInRobotFrame, robotToRobotStabilized);
-
     // Apply the robot stabilized filters to the point cloud in the robot stabilized frame
     robotStabilizedFilters.apply(inputInRobotStabilizedFrame);
+
     // Compute the transformation between the stabilized robot frame (base_link_stabilized) and the
     // map frame
     PM::DataPoints inputInMapFrame =
