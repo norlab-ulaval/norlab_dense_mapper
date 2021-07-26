@@ -842,6 +842,27 @@ void norlab_dense_mapper::DenseMap::updateLocalPointCloud(PM::DataPoints input,
                             PM::Matrix::Constant(1, input.features.cols(), priorDynamic));
     }
 
+    if(!input.descriptorExists("covariance"))
+    {
+        PM::Matrix covariances = PM::Matrix::Zero(9, input.getNbPoints());
+        covariances.row(0) = PM::Matrix::Constant(1, input.getNbPoints(), 0.0009);
+        covariances.row(4) = PM::Matrix::Constant(1, input.getNbPoints(), 0.0009);
+        covariances.row(8) = PM::Matrix::Constant(1, input.getNbPoints(), 0.0009);
+        input.addDescriptor("covariance", covariances);
+    }
+
+    if(!input.descriptorExists("weightSum"))
+    {
+        PM::Matrix weightSums = PM::Matrix::Zero(9, input.getNbPoints());
+        input.addDescriptor("weightSum", weightSums);
+    }
+
+    if(!input.descriptorExists("nbPoints"))
+    {
+        PM::Matrix nbPoints = PM::Matrix::Ones(1, input.getNbPoints());
+        input.addDescriptor("nbPoints", nbPoints);
+    }
+
     localPointCloudLock.lock();
     if (localPointCloudEmpty.load())
     {
@@ -856,7 +877,7 @@ void norlab_dense_mapper::DenseMap::updateLocalPointCloud(PM::DataPoints input,
             retrievePointsFurtherThanMinDistNewPoint(input, localPointCloud, pose);
         localPointCloud.concatenate(inputPointsToKeep);
     }
-    
+
     transformation->inPlaceCompute(pose.inverse(), localPointCloud);
     postFilters.apply(localPointCloud);
     transformation->inPlaceCompute(pose, localPointCloud);
