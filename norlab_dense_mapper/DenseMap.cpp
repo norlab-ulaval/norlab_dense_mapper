@@ -842,9 +842,9 @@ void norlab_dense_mapper::DenseMap::updateLocalPointCloud(PM::DataPoints input,
                             PM::Matrix::Constant(1, input.features.cols(), priorDynamic));
     }
 
-    if(!input.descriptorExists("mean"))
+    if(!input.descriptorExists("initialPosition"))
     {
-        input.addDescriptor("mean", input.features.topRows(3));
+        input.addDescriptor("initialPosition", input.features.topRows(3));
     }
 
     if(!input.descriptorExists("covariance"))
