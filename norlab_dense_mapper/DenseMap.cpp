@@ -847,13 +847,13 @@ void norlab_dense_mapper::DenseMap::updateLocalPointCloud(PM::DataPoints input,
         input.addDescriptor("initialPosition", input.features.topRows(3));
     }
 
-    if(!input.descriptorExists("covariance"))
+    if(!input.descriptorExists("omega"))
     {
-        PM::Matrix covariances = PM::Matrix::Zero(9, input.getNbPoints());
-        covariances.row(0) = PM::Matrix::Constant(1, input.getNbPoints(), 0.0009);
-        covariances.row(4) = PM::Matrix::Constant(1, input.getNbPoints(), 0.0009);
-        covariances.row(8) = PM::Matrix::Constant(1, input.getNbPoints(), 0.0009);
-        input.addDescriptor("covariance", covariances);
+        PM::Matrix omegas = PM::Matrix::Zero(9, input.getNbPoints());
+        omegas.row(0) = PM::Matrix::Constant(1, input.getNbPoints(), 1.0 / 0.0009);
+        omegas.row(4) = PM::Matrix::Constant(1, input.getNbPoints(), 1.0 / 0.0009);
+        omegas.row(8) = PM::Matrix::Constant(1, input.getNbPoints(), 1.0 / 0.0009);
+        input.addDescriptor("omega", omegas);
     }
 
     if(!input.descriptorExists("weightSum"))
